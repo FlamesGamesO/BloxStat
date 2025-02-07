@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RBX Stats Explorer - Ultra Modern with Sliding Animations</title>
+  <!-- Google Font for HIGH QUALITY BOLD TEXT -->
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN for Dashboard Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Base Styles with Oswald font and smooth transitions */
+    body {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 900;
+      background-color: #000;
+      color: #e5e7eb; /* Tailwind gray-200 */
+      position: relative;
+      overflow-x: hidden;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      text-shadow: 2px 2px 4px rgba(6, 182, 212, 0.7);
+    }
+    /* Light theme overrides */
+    body.light {
+      background-color: #f0f0f0;
+      color: #1f2937; /* Tailwind gray-800 */
+    }
+    body.light h1, 
+    body.light h2, 
+    body.light h3, 
+    body.light h4, 
+    body.light h5, 
+    body.light h6 {
+      text-shadow: none;
+    }
+    /* Background grid overlay with animated gradient lights */
+    #background-effects {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -10;
+      pointer-events: none;
+      background-image: 
+        linear-gradient(0deg, transparent 24%, rgba(6, 182, 212, 0.2) 25%, rgba(6, 182, 212, 0.2) 26%, transparent 27%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(6, 182, 212, 0.2) 25%, rgba(6, 182, 212, 0.2) 26%, transparent 27%, transparent);
+      background-size: 50px 50px;
+    }
+    .gradient-light {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.8) 0%, transparent 70%);
+      opacity: 0;
+      animation: glow 5s ease-in-out infinite;
+      filter: blur(8px);
+    }
+    @keyframes glow {
+      0%, 100% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    /* Glass Blur (Glassmorphism) effect for modals and header */
+    .glass {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    /* Header with glass effect */
+    header {
+      background: rgba(17, 24, 39, 0.7); /* Tailwind gray-900 with transparency */
+      backdrop-filter: blur(8px);
+    }
+    /* Navigation link active state */
+    .nav-link.active {
+      border-bottom: 2px solid #06b6d4;
+    }
+    /* Modal Overlay */
+    .modal-overlay {
+      background-color: rgba(0, 0, 0, 0.75);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out;
+    }
+    /* Back to Top Button */
+    #back-to-top {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background-color: #06b6d4;
+      color: #000;
+      padding: 0.75rem 1rem;
+      border-radius: 9999px;
+      font-weight: bold;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 50;
+    }
+    #back-to-top.show {
+      opacity: 1;
+    }
+    /* Glass Cards for JSON offsets */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .glass-card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 16px rgba(6, 182, 212, 0.4);
+    }
+    /* Sliding animations for tab transitions */
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideOutLeft {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+    }
+    .slide-in {
+      animation: slideInRight 0.5s forwards;
+    }
+    .slide-out {
+      animation: slideOutLeft 0.5s forwards;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Effects -->
+  <div id="background-effects"></div>
+
+  <!-- Responsive Header / Navigation with Glass Effect -->
+  <header class="glass shadow sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <div class="flex-shrink-0 text-3xl text-green-300">
+        RBX Stats Explorer
+      </div>
+      <div class="hidden md:flex md:items-center md:space-x-6">
+        <button class="nav-link hover:text-green-300 focus:outline-none" id="nav-json">JSON Offsets</button>
+        <button class="nav-link hover:text-green-300 focus:outline-none" id="nav-plain">Plain Offsets</button>
+        <button class="nav-link hover:text-green-300 focus:outline-none" id="nav-search">Search Offset</button>
+        <button class="nav-link hover:text-green-300 focus:outline-none" id="nav-dashboard">Dashboard</button>
+        <button class="nav-link hover:text-green-300 focus:outline-none" id="nav-about">About</button>
+      </div>
+      <div class="flex items-center">
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-1 px-3 rounded focus:outline-none mr-2">
+          Theme
+        </button>
+        <!-- Settings Button -->
+        <button id="settings-button" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-1 px-3 rounded focus:outline-none">
+          Settings
+        </button>
+      </div>
+      <div class="flex items-center md:hidden">
+        <!-- Mobile Menu Button -->
+        <button id="mobile-menu-button" class="text-cyan-300 hover:text-green-300 focus:outline-none">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- Mobile Navigation Menu -->
+    <nav id="mobile-menu" class="hidden md:hidden bg-gray-800 glass">
+      <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        <button class="block w-full text-left nav-link hover:text-green-300 focus:outline-none" id="mobile-nav-json">JSON Offsets</button>
+        <button class="block w-full text-left nav-link hover:text-green-300 focus:outline-none" id="mobile-nav-plain">Plain Offsets</button>
+        <button class="block w-full text-left nav-link hover:text-green-300 focus:outline-none" id="mobile-nav-search">Search Offset</button>
+        <button class="block w-full text-left nav-link hover:text-green-300 focus:outline-none" id="mobile-nav-dashboard">Dashboard</button>
+        <button class="block w-full text-left nav-link hover:text-green-300 focus:outline-none" id="mobile-nav-about">About</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto p-4">
+    <!-- JSON Offsets Tab -->
+    <section id="tab-json" class="tab-section hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+        <h2 class="text-2xl text-green-300 mb-2 sm:mb-0">All Offsets (JSON)</h2>
+        <div class="flex items-center space-x-2">
+          <input id="filter-input" type="text" placeholder="Filter offsets..." 
+            class="w-full sm:w-64 p-2 rounded bg-gray-800 text-green-300 placeholder-gray-500 focus:outline-none border border-gray-700" />
+          <button id="refresh-json" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded focus:outline-none">
+            Refresh
+          </button>
+        </div>
+      </div>
+      <p id="last-updated-json" class="text-sm text-gray-500 mb-2"></p>
+      <div id="json-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- JSON offset cards will be injected here -->
+      </div>
+    </section>
+
+    <!-- Plain Offsets Tab -->
+    <section id="tab-plain" class="tab-section hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl text-green-300">All Offsets (Plain Text)</h2>
+        <button id="refresh-plain" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded focus:outline-none">
+          Refresh
+        </button>
+      </div>
+      <p id="last-updated-plain" class="text-sm text-gray-500 mb-2"></p>
+      <pre id="plain-container" class="bg-gray-800 p-4 rounded overflow-auto whitespace-pre-wrap"></pre>
+    </section>
+
+    <!-- Search Offset Tab -->
+    <section id="tab-search" class="tab-section hidden">
+      <h2 class="text-2xl text-green-300 mb-4">Search Offset</h2>
+      <div class="mb-4">
+        <input type="text" id="search-input" placeholder="Enter offset name" 
+          class="w-full p-2 rounded bg-gray-800 text-green-300 placeholder-gray-500 focus:outline-none border border-gray-700" />
+      </div>
+      <div class="flex items-center justify-between mb-4">
+        <button id="search-button" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded focus:outline-none">
+          Search
+        </button>
+        <div id="search-history" class="text-sm text-gray-500"></div>
+      </div>
+      <div id="search-result">
+        <!-- Search result card will be injected here -->
+      </div>
+    </section>
+
+    <!-- Dashboard Tab -->
+    <section id="tab-dashboard" class="tab-section hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl text-green-300">Dashboard</h2>
+        <button id="refresh-dashboard" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded focus:outline-none">
+          Refresh Chart
+        </button>
+      </div>
+      <canvas id="dashboard-chart" class="bg-gray-800 rounded"></canvas>
+    </section>
+  </main>
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top" title="Back to Top">Top</button>
+
+  <!-- Modals -->
+  <!-- Detail Modal (Glass Blur Effect Applied) -->
+  <div id="detail-modal" class="fixed inset-0 hidden flex items-center justify-center modal-overlay z-50">
+    <div class="glass rounded-lg shadow-lg p-6 max-w-md w-full relative animate-fadeIn">
+      <button id="detail-close" class="absolute top-2 right-2 text-gray-400 hover:text-gray-200 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <h3 id="detail-title" class="text-xl text-green-300 mb-2"></h3>
+      <p id="detail-content" class="text-cyan-300 mb-4"></p>
+      <button id="copy-offset" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded focus:outline-none">
+        Copy Offset
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Modal (Glass Blur Effect Applied) -->
+  <div id="settings-modal" class="fixed inset-0 hidden flex items-center justify-center modal-overlay z-50">
+    <div class="glass rounded-lg shadow-lg p-6 max-w-md w-full relative animate-fadeIn">
+      <button id="settings-close" class="absolute top-2 right-2 text-gray-400 hover:text-gray-200 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <h3 class="text-xl text-green-300 mb-4">Settings</h3>
+      <div class="mb-4">
+        <label for="refresh-interval" class="block text-gray-300 mb-1">Auto-Refresh Interval (seconds):</label>
+        <input id="refresh-interval" type="number" min="5" max="300" step="5"
+          class="w-full p-2 rounded bg-gray-800 text-green-300 placeholder-gray-500 focus:outline-none border border-gray-700" />
+      </div>
+      <button id="save-settings" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded focus:outline-none">
+        Save Settings
+      </button>
+    </div>
+  </div>
+
+  <!-- About Modal (Glass Blur Effect Applied) -->
+  <div id="about-modal" class="fixed inset-0 hidden flex items-center justify-center modal-overlay z-50">
+    <div class="glass rounded-lg shadow-lg p-6 max-w-md w-full relative animate-fadeIn">
+      <button id="about-close" class="absolute top-2 right-2 text-gray-400 hover:text-gray-200 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <h3 class="text-xl text-green-300 mb-2">About RBX Stats Explorer</h3>
+      <p class="text-cyan-300">
+        This ultra modern explorer uses a Flask proxy to fetch Roblox offsets from the API and displays the data in multiple views—including an interactive dashboard with custom charts. Enjoy live updates, search history, custom settings, a dynamic animated background, glass blur effects, and smooth sliding transitions between sections.
+      </p>
+    </div>
+  </div>
+
+  <!-- JavaScript Section -->
+  <script>
+    /***** Global Variables *****/
+    const BASE_URL = "http://127.0.0.1:5000/api";
+    let autoRefreshIntervalId = null;
+    let refreshInterval = 30000; // default: 30 seconds
+    let jsonData = {};      // JSON offsets storage
+    let searchHistory = []; // Maximum of 5 search terms
+
+    /***** Navigation and Tab Switching *****/
+    const navButtons = {
+      json: document.getElementById('nav-json'),
+      plain: document.getElementById('nav-plain'),
+      search: document.getElementById('nav-search'),
+      dashboard: document.getElementById('nav-dashboard'),
+      about: document.getElementById('nav-about')
+    };
+
+    const mobileNavButtons = {
+      json: document.getElementById('mobile-nav-json'),
+      plain: document.getElementById('mobile-nav-plain'),
+      search: document.getElementById('mobile-nav-search'),
+      dashboard: document.getElementById('mobile-nav-dashboard'),
+      about: document.getElementById('mobile-nav-about')
+    };
+
+    const tabSections = {
+      json: document.getElementById('tab-json'),
+      plain: document.getElementById('tab-plain'),
+      search: document.getElementById('tab-search'),
+      dashboard: document.getElementById('tab-dashboard')
+    };
+
+    // Function to animate transition between tabs using sliding animations
+    function activateTab(tabName) {
+      // Update nav button active state (both desktop and mobile)
+      Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
+      Object.values(mobileNavButtons).forEach(btn => btn.classList.remove('active'));
+      if (navButtons[tabName]) navButtons[tabName].classList.add('active');
+      if (mobileNavButtons[tabName]) mobileNavButtons[tabName].classList.add('active');
+
+      const newTab = tabSections[tabName];
+      const currentActiveTab = document.querySelector('.tab-section:not(.hidden)');
+      
+      if (currentActiveTab && currentActiveTab !== newTab) {
+        // Slide out the current active tab to the left
+        currentActiveTab.classList.add('slide-out');
+        currentActiveTab.addEventListener('animationend', function() {
+          currentActiveTab.classList.remove('slide-out');
+          currentActiveTab.classList.add('hidden');
+          // Slide in the new tab from the right
+          newTab.classList.remove('hidden');
+          newTab.classList.add('slide-in');
+          newTab.addEventListener('animationend', function() {
+            newTab.classList.remove('slide-in');
+          }, {once: true});
+        }, {once: true});
+      } else {
+        newTab.classList.remove('hidden');
+        newTab.classList.add('slide-in');
+        newTab.addEventListener('animationend', function() {
+          newTab.classList.remove('slide-in');
+        }, {once: true});
+      }
+
+      // Start or stop auto-refresh based on the active tab
+      if (tabName === 'json') {
+        startAutoRefresh(loadJSONOffsets);
+      } else if (tabName === 'plain') {
+        startAutoRefresh(loadPlainOffsets);
+      } else if (tabName === 'dashboard') {
+        startAutoRefresh(() => loadJSONOffsets(loadDashboardChart));
+      } else {
+        stopAutoRefresh();
+      }
+    }
+
+    /***** Mobile Menu Toggle *****/
+    document.getElementById('mobile-menu-button').addEventListener('click', () => {
+      const mobileMenu = document.getElementById('mobile-menu');
+      mobileMenu.classList.toggle('hidden');
+    });
+    Object.keys(mobileNavButtons).forEach(key => {
+      mobileNavButtons[key].addEventListener('click', () => {
+        if (key === 'about') {
+          openModal('about');
+        } else {
+          activateTab(key);
+        }
+      });
+    });
+    navButtons.json.addEventListener('click', () => activateTab('json'));
+    navButtons.plain.addEventListener('click', () => activateTab('plain'));
+    navButtons.search.addEventListener('click', () => activateTab('search'));
+    navButtons.dashboard.addEventListener('click', () => activateTab('dashboard'));
+    navButtons.about.addEventListener('click', () => openModal('about'));
+
+    /***** Auto-Refresh Functions *****/
+    function startAutoRefresh(loadFunction) {
+      autoRefreshIntervalId = setInterval(loadFunction, refreshInterval);
+    }
+    function stopAutoRefresh() {
+      if (autoRefreshIntervalId) {
+        clearInterval(autoRefreshIntervalId);
+        autoRefreshIntervalId = null;
+      }
+    }
+
+    /***** JSON Offsets *****/
+    async function loadJSONOffsets(callback) {
+      const container = document.getElementById('json-container');
+      container.innerHTML = '<div class="w-full text-center text-cyan-300">Loading offsets...</div>';
+      try {
+        const response = await fetch(`${BASE_URL}/offsets`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        jsonData = await response.json();
+        renderJSONCards(jsonData);
+        document.getElementById('last-updated-json').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+        if (callback && typeof callback === 'function') callback();
+      } catch (error) {
+        container.innerHTML = '<div class="w-full text-center text-red-500">Failed to load offsets. Please try again.</div>';
+        console.error('Error loading JSON offsets:', error);
+      }
+    }
+
+    function renderJSONCards(data) {
+      const container = document.getElementById('json-container');
+      container.innerHTML = '';
+      Object.entries(data).forEach(([key, value]) => {
+        const card = document.createElement('div');
+        card.className = 'glass-card p-4 rounded cursor-pointer';
+        card.dataset.key = key;
+        card.innerHTML = `
+          <h3 class="text-xl text-green-300">${key}</h3>
+          <p class="mt-2 text-cyan-300">Value: ${value}</p>
+        `;
+        card.addEventListener('click', () => openDetailModal(key, value));
+        container.appendChild(card);
+      });
+      applyFilter();
+    }
+
+    /***** Filter Functionality *****/
+    function applyFilter() {
+      const filterValue = document.getElementById('filter-input').value.toLowerCase();
+      document.querySelectorAll('#json-container > div').forEach(card => {
+        const key = card.dataset.key.toLowerCase();
+        card.style.display = key.includes(filterValue) ? '' : 'none';
+      });
+    }
+    document.getElementById('filter-input').addEventListener('input', applyFilter);
+    document.getElementById('refresh-json').addEventListener('click', loadJSONOffsets);
+    document.getElementById('refresh-plain').addEventListener('click', loadPlainOffsets);
+    document.getElementById('refresh-dashboard').addEventListener('click', () => loadJSONOffsets(loadDashboardChart));
+
+    /***** Plain Offsets *****/
+    async function loadPlainOffsets() {
+      const container = document.getElementById('plain-container');
+      container.textContent = 'Loading plain text offsets...';
+      try {
+        const response = await fetch(`${BASE_URL}/offsets/plain`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const text = await response.text();
+        container.textContent = text;
+        document.getElementById('last-updated-plain').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+      } catch (error) {
+        container.textContent = 'Failed to load plain offsets. Please try again.';
+        console.error('Error loading plain offsets:', error);
+      }
+    }
+
+    /***** Search Offset *****/
+    document.getElementById('search-button').addEventListener('click', async () => {
+      const term = document.getElementById('search-input').value.trim();
+      if (!term) return;
+      updateSearchHistory(term);
+      const resultContainer = document.getElementById('search-result');
+      resultContainer.innerHTML = '<div class="text-center text-cyan-300">Searching...</div>';
+      try {
+        const response = await fetch(`${BASE_URL}/offsets/search/${encodeURIComponent(term)}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        resultContainer.innerHTML = '';
+        if (data && data.Name) {
+          const card = document.createElement('div');
+          card.className = 'bg-gray-800 p-4 rounded shadow hover:shadow-lg transition transform hover:scale-105';
+          card.innerHTML = `
+            <h3 class="text-xl text-green-300">${data.Name}</h3>
+            <p class="mt-2 text-cyan-300">Offset: ${data.Name}</p>
+          `;
+          resultContainer.appendChild(card);
+        } else {
+          resultContainer.innerHTML = '<div class="text-center text-yellow-500">No offset found with that name.</div>';
+        }
+      } catch (error) {
+        resultContainer.innerHTML = '<div class="text-center text-red-500">Error searching for offset. Please try again.</div>';
+        console.error('Error searching offset:', error);
+      }
+    });
+
+    function updateSearchHistory(term) {
+      searchHistory.unshift(term);
+      if (searchHistory.length > 5) searchHistory.pop();
+      document.getElementById('search-history').textContent = 'History: ' + searchHistory.join(', ');
+    }
+
+    /***** Dashboard (Chart.js) *****/
+    let dashboardChart = null;
+    function loadDashboardChart() {
+      const keys = Object.keys(jsonData);
+      const values = keys.map(key => key.length);
+      const ctx = document.getElementById('dashboard-chart').getContext('2d');
+      if (dashboardChart) {
+        dashboardChart.destroy();
+      }
+      dashboardChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: keys,
+          datasets: [{
+            label: 'Key Length',
+            data: values,
+            backgroundColor: 'rgba(6, 182, 212, 0.5)',
+            borderColor: 'rgba(6, 182, 212, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: 'Offset Key Lengths'
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#06b6d4' } },
+            y: { ticks: { color: '#06b6d4' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    /***** Detail Modal *****/
+    function openDetailModal(key, value) {
+      document.getElementById('detail-title').textContent = key;
+      document.getElementById('detail-content').textContent = `Offset Value: ${value}`;
+      document.getElementById('detail-modal').classList.remove('hidden');
+      document.getElementById('copy-offset').onclick = () => {
+        navigator.clipboard.writeText(value).then(() => {
+          document.getElementById('copy-offset').textContent = 'Copied!';
+          setTimeout(() => {
+            document.getElementById('copy-offset').textContent = 'Copy Offset';
+          }, 1500);
+        }).catch(err => console.error('Copy failed: ', err));
+      };
+    }
+    document.getElementById('detail-close').addEventListener('click', () => {
+      document.getElementById('detail-modal').classList.add('hidden');
+    });
+    document.getElementById('detail-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('detail-modal')) {
+        document.getElementById('detail-modal').classList.add('hidden');
+      }
+    });
+
+    /***** Settings Modal *****/
+    document.getElementById('settings-button').addEventListener('click', () => {
+      document.getElementById('settings-modal').classList.remove('hidden');
+      document.getElementById('refresh-interval').value = refreshInterval / 1000;
+    });
+    document.getElementById('settings-close').addEventListener('click', () => {
+      document.getElementById('settings-modal').classList.add('hidden');
+    });
+    document.getElementById('save-settings').addEventListener('click', () => {
+      const newInterval = parseInt(document.getElementById('refresh-interval').value, 10);
+      if (newInterval && newInterval >= 5) {
+        refreshInterval = newInterval * 1000;
+        stopAutoRefresh();
+        const activeTab = document.querySelector('.nav-link.active');
+        if (activeTab && activeTab.id === 'nav-json') {
+          startAutoRefresh(loadJSONOffsets);
+        } else if (activeTab && activeTab.id === 'nav-plain') {
+          startAutoRefresh(loadPlainOffsets);
+        } else if (activeTab && activeTab.id === 'nav-dashboard') {
+          startAutoRefresh(() => loadJSONOffsets(loadDashboardChart));
+        }
+      }
+      document.getElementById('settings-modal').classList.add('hidden');
+    });
+
+    /***** About Modal *****/
+    function openModal(type) {
+      if (type === 'about') {
+        document.getElementById('about-modal').classList.remove('hidden');
+      }
+    }
+    document.getElementById('about-close').addEventListener('click', () => {
+      document.getElementById('about-modal').classList.add('hidden');
+    });
+    document.getElementById('about-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('about-modal')) {
+        document.getElementById('about-modal').classList.add('hidden');
+      }
+    });
+
+    /***** Theme Toggle *****/
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('light');
+      themeToggle.textContent = document.body.classList.contains('light') ? 'Dark' : 'Light';
+    });
+
+    /***** Back to Top Button *****/
+    const backToTop = document.getElementById('back-to-top');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 200) {
+        backToTop.classList.add('show');
+      } else {
+        backToTop.classList.remove('show');
+      }
+    });
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    /***** Background Gradient Light Generation *****/
+    function generateGradientLights() {
+      const bgEffects = document.getElementById('background-effects');
+      const numLights = 8;
+      for (let i = 0; i < numLights; i++) {
+        const light = document.createElement('div');
+        light.className = 'gradient-light';
+        const posX = Math.random() * window.innerWidth;
+        const posY = Math.random() * window.innerHeight;
+        light.style.left = posX + 'px';
+        light.style.top = posY + 'px';
+        const duration = 4 + Math.random() * 4;
+        const delay = Math.random() * 4;
+        light.style.animationDuration = duration + 's';
+        light.style.animationDelay = delay + 's';
+        bgEffects.appendChild(light);
+      }
+    }
+    generateGradientLights();
+    window.addEventListener('resize', () => {
+      const bgEffects = document.getElementById('background-effects');
+      bgEffects.innerHTML = '';
+      generateGradientLights();
+    });
+
+    /***** Initialize Default Tab *****/
+    activateTab('json');
+  </script>
+</body>
+</html>
