@@ -16,7 +16,6 @@ def proxy_request(target_url):
     """Helper function to forward the request to the target URL."""
     try:
         api_response = requests.get(target_url)
-        # Return the raw content, status code, and content type.
         return api_response.content, api_response.status_code, api_response.headers.get("Content-Type", "application/json")
     except Exception as e:
         return f"Error fetching data: {str(e)}", 500, "text/plain"
@@ -39,10 +38,8 @@ def offsets_search(name):
     body, status, content_type = proxy_request(target_url)
     return Response(body, status=status, content_type=content_type)
 
-# Vercel requires a top-level "handler" function for Python serverless functions.
-# This function will adapt the Flask app's WSGI response to Vercel’s expected output.
+# Vercel expects a top-level handler function for Python serverless functions.
 def handler(request):
-    # Vercel passes in a "request" object with an "environ" attribute.
     response = WResponse.from_app(app, request.environ)
     return {
         "statusCode": response.status_code,
