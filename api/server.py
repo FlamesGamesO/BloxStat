@@ -1,4 +1,3 @@
-import os
 import requests
 import json
 from flask import Flask, Response
@@ -8,15 +7,19 @@ from werkzeug.wrappers import Response as WResponse
 app = Flask(__name__)
 CORS(app)  # Allow all domains
 
-# Get your API key from an environment variable (set this in Vercel)
-API_KEY = os.environ.get("API_KEY", "vV7yhrHeM5SseeQHn7f-ndckmR8l4h4J")
+# Hard-coded API key and base URL
+API_KEY = "vV7yhrHeM5SseeQHn7f-ndckmR8l4h4J"
 BASE_URL = "https://api.rbxstats.xyz/api"
 
 def proxy_request(target_url):
     """Helper function to forward the request to the target URL."""
     try:
         api_response = requests.get(target_url)
-        return api_response.content, api_response.status_code, api_response.headers.get("Content-Type", "application/json")
+        return (
+            api_response.content,
+            api_response.status_code,
+            api_response.headers.get("Content-Type", "application/json")
+        )
     except Exception as e:
         return f"Error fetching data: {str(e)}", 500, "text/plain"
 
